@@ -50,9 +50,35 @@ COPY . .
 RUN pnpm run build
 
 ################################################################################
+# Create a development stage for hot reloading
+FROM base as development
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install all dependencies including devDependencies
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# Copy the rest of the source files into the image
+COPY . .
+
+# Expose ports for the application and hot reloading
+EXPOSE 3000 3001
+
+# Set development environment
+ENV NODE_ENV=development \
+    WATCHPACK_POLLING=true
+
+# Run the development server
+CMD ["pnpm", "dev"]
+
 # Create a new stage to run the application with minimal runtime dependencies
-# where the necessary files are copied from the build stage.
 FROM base as final
+
+WORKDIR /app
 
 # Use production node environment by default.
 ENV NODE_ENV production
@@ -68,7 +94,6 @@ COPY --from=build /usr/src/app/package.json ./package.json
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/.next ./.next
 COPY --from=build /usr/src/app/public ./public
-
 
 # Expose the port that the application listens on.
 EXPOSE 3000

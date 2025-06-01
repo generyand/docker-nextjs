@@ -11,10 +11,17 @@ services:
   server:
     build:
       context: .
+      target: development
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"  # Enable polling for hot reload in Docker
     ports:
-      - 3000:3000
+      - 3000:3000  # Application port
+      - 3001:3001  # WebSocket port for hot reload
+    volumes:
+      - .:/app  # Mount the current directory to /app in container
+      - /app/node_modules  # Don't override node_modules in container
+    command: pnpm dev  # Run in development mode
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
